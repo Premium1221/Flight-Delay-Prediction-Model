@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flight Delay Prediction Model Info</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        h2 {
+            color: #2196F3;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #555;
+        }
+        .back-button {
+            background-color: #2196F3;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .features-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .features-table th, .features-table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .features-table th {
+            background-color: #f2f2f2;
+        }
+        .importance-bar {
+            background-color: #2196F3;
+            height: 15px;
+            border-radius: 3px;
+        }
+        .model-status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+        }
+        .active {
+            background-color: #4CAF50;
+        }
+        .inactive {
+            background-color: #f44336;
+        }
+        .feature-category {
+            margin-bottom: 30px;
+        }
+        .disclaimer {
+            font-style: italic;
+            color: #555;
+            margin-top: 20px;
+        }
+        .info-box {
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 10px 15px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Flight Delay Prediction Model Information</h1>
+    
+    <div class="card">
+        <h2>Model Status</h2>
+        <p>
+            Current Status: 
+            <span class="model-status {% if not using_dummy_model %}active{% else %}inactive{% endif %}">
+                {% if not using_dummy_model %}Active{% else %}Inactive{% endif %}
+            </span>
+        </p>
+        
+        {% if using_dummy_model %}
+        <div class="disclaimer">
+            <p>The application is currently using a simplified prediction model. For accurate predictions, 
+            please ensure the actual trained model file is available in the application directory.</p>
+        </div>
+        {% else %}
+        <p>The application is using the trained machine learning model for flight delay predictions.</p>
+        <p>Model type: {{ model_type }}</p>
+        {% endif %}
+        
+        <div class="info-box">
+            <h3>Delay Definition</h3>
+            <p>This model predicts whether a flight will be delayed by <strong>15 minutes or more</strong> after the scheduled departure time.</p>
+            <p>This 15-minute threshold is an industry standard definition for flight delays, used by airlines and the Federal Aviation Administration (FAA).</p>
+        </div>
+    </div>
+    
+    {% if model_features and not using_dummy_model and model_features|length > 0 %}
+    <div class="card">
+        <h2>Model Features</h2>
+        <p>This model uses {{ model_features|length }} features to make predictions:</p>
+        
+        <div class="feature-category">
+            <h3>Temporal Features</h3>
+            <ul>
+                {% for feature in model_features %}
+                    {% if 'DAY' in feature or 'MONTH' in feature or 'TIME' in feature or 'HOUR' in feature %}
+                        <li>{{ feature }}</li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <div class="feature-category">
+            <h3>Flight Information</h3>
+            <ul>
+                {% for feature in model_features %}
+                    {% if 'AIRLINE' in feature or 'ORIGIN' in feature or 'DEST' in feature or 'DISTANCE' in feature or 'FL_NUM' in feature %}
+                        <li>{{ feature }}</li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <div class="feature-category">
+            <h3>Other Features</h3>
+            <ul>
+                {% for feature in model_features %}
+                    {% if not ('DAY' in feature or 'MONTH' in feature or 'TIME' in feature or 'HOUR' in feature) and not ('AIRLINE' in feature or 'ORIGIN' in feature or 'DEST' in feature or 'DISTANCE' in feature or 'FL_NUM' in feature) %}
+                        <li>{{ feature }}</li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if feature_importances and not using_dummy_model and feature_importances.items()|list|length > 0 %}
+    <div class="card">
+        <h2>Feature Importance</h2>
+        <p>These features have the most influence on flight delay predictions:</p>
+        <table class="features-table">
+            <tr>
+                <th>Rank</th>
+                <th>Feature</th>
+                <th>Importance Score</th>
+                <th>Relative Weight</th>
+            </tr>
+            {% set first_importance = feature_importances.values()|list|first if feature_importances.values()|list else 1 %}
+            {% for feature, importance in feature_importances.items() %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ feature }}</td>
+                <td>{{ "%.4f"|format(importance) }}</td>
+                <td>
+                    <div class="importance-bar" style="width: {{ (importance / first_importance * 100)|int if first_importance > 0 else 0 }}%;"></div>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endif %}
+    
+    <div class="card">
+        <h2>About Flight Delay Prediction</h2>
+        <p>This application uses a machine learning model to predict whether a flight will be delayed by 15 minutes or more based on various factors such as:</p>
+        <ul>
+            <li>Airline carrier</li>
+            <li>Origin and destination airports</li>
+            <li>Day of week and month</li>
+            <li>Scheduled departure time</li>
+            <li>Flight distance</li>
+        </ul>
+        
+        <p>The predictions are based on historical patterns identified by the model during training.</p>
+        
+        <h3>Model Interpretation</h3>
+        <ul>
+            <li><strong>Delay Probability:</strong> The likelihood that a flight will be delayed by 15+ minutes, expressed as a percentage.</li>
+            <li><strong>Estimated Delay:</strong> The predicted number of minutes a flight might be delayed.</li>
+            <li><strong>Feature Importance:</strong> Indicates which factors have the most influence on delay predictions.</li>
+        </ul>
+        
+        <div class="info-box">
+            <h3>Delay Estimation</h3>
+            <p>For flights predicted to be delayed (15+ minutes), the application estimates the specific delay duration based on:</p>
+            <ul>
+                <li>The minimum threshold of 15 minutes</li>
+                <li>The predicted probability of delay (higher probability generally indicates longer potential delays)</li>
+                <li>Historical patterns of delay durations</li>
+            </ul>
+        </div>
+    </div>
+    
+    <a href="/" class="back-button">Return to Predictor</a>
+</body>
+</html>

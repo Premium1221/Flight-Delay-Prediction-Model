@@ -1,0 +1,262 @@
+/* Flight Delay Predictor - Enhanced CSS */
+
+/* Global Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f8fa;
+    color: #333;
+    line-height: 1.6;
+}
+
+.navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+    font-weight: 600;
+}
+
+/* Card Styling */
+.card {
+    border-radius: 12px;
+    overflow: hidden;
+    border: none;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    border-bottom: none;
+    padding: 1rem 1.5rem;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+.card-footer {
+    border-top: none;
+    background-color: #f8f9fa;
+    padding: 1rem 1.5rem;
+}
+
+/* Form Elements */
+.form-control, .form-select {
+    border-radius: 8px;
+    padding: 0.75rem;
+    border: 1px solid #ced4da;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Date Input Styling */
+input[type="date"] {
+    border-radius: 8px;
+    padding: 0.75rem;
+    border: 1px solid #ced4da;
+    font-size: 16px;
+    width: 100%;
+    color: #495057;
+}
+
+input[type="date"]:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+    color: #495057;
+    cursor: pointer;
+}
+
+/* Time Input Styling */
+input[type="time"] {
+    border-radius: 8px;
+    padding: 0.75rem;
+    border: 1px solid #ced4da;
+    font-size: 16px;
+    width: 100%;
+    color: #495057;
+}
+
+input[type="time"]:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #495057;
+}
+
+/* Buttons */
+.btn {
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    transition: transform 0.2s ease;
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+    transform: translateY(-2px);
+}
+
+.btn-lg {
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+}
+
+/* Alert Styling */
+.alert {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* Custom Animation Classes */
+.fade-in {
+    animation: fadeIn 0.8s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.slide-up {
+    animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Date Information Display */
+.date-info {
+    font-size: 14px;
+    color: #2196F3;
+    margin-top: 5px;
+    font-style: italic;
+    min-height: 20px;
+}
+
+/* Flight Info Section */
+.flight-info {
+    background-color: #f8f9fa;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .btn-lg {
+        padding: 0.75rem 1.5rem;
+    }
+    
+    .card:hover {
+        transform: none;
+    }
+    
+    .col {
+        min-width: 100%;
+        margin-bottom: 1rem;
+    }
+}
+
+/* Footer Styling */
+footer {
+    border-top: 1px solid #eaeaea;
+    margin-top: 3rem;
+}
+
+/* Custom Classes for Results Page */
+.result-icon {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+}
+
+.prediction-container {
+    padding: 2rem;
+    border-radius: 15px;
+    text-align: center;
+    margin: 2rem 0;
+}
+
+.on-time {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.delayed {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+/* Loading Animation */
+.loading-spinner {
+    width: 3rem;
+    height: 3rem;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #0d6efd;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 2rem auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Card Animation */
+.card.animate-slide-up {
+    animation: slideUp 0.5s ease-out both;
+}
+
+/* Date picker enhancement */
+.date-picker-container {
+    position: relative;
+}
+
+.date-picker-container:after {
+    content: '📅';
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: #6c757d;
+}
+
+/* Sample flight button animation */
+.load-sample-btn {
+    transition: all 0.3s ease;
+}
+
+.load-sample-btn:hover {
+    transform: scale(1.02);
+    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
+}

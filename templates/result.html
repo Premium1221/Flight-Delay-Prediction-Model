@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flight Delay Prediction Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .result-card {
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .flight-info {
+            margin-bottom: 20px;
+        }
+        .flight-summary {
+            background-color: #e8f5e9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .flight-summary h3 {
+            margin-top: 0;
+            color: #2e7d32;
+        }
+        .prediction {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            color: white;
+            text-align: center;
+        }
+        .delayed {
+            background-color: #f44336;
+        }
+        .on-time {
+            background-color: #4CAF50;
+        }
+        .back-button {
+            background-color: #2196F3;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .disclaimer {
+            font-style: italic;
+            color: #555;
+            margin-top: 20px;
+        }
+        .features-section {
+            margin-top: 30px;
+        }
+        .features-section h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .features-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .features-table th, .features-table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .features-table th {
+            background-color: #f2f2f2;
+        }
+        .importance-bar {
+            background-color: #2196F3;
+            height: 15px;
+            border-radius: 3px;
+        }
+        .action-buttons {
+            margin-top: 20px;
+        }
+        .model-info-button {
+            background-color: #FF9800;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .delay-definition {
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 10px 15px;
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+        .flight-date {
+            font-weight: bold;
+            color: #1976d2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Flight Delay Prediction Results</h1>
+    
+    <div class="result-card">
+        <div class="flight-summary">
+            <h3>Flight Summary</h3>
+            <p><strong>{{ airline }}</strong> from <strong>{{ origin }}</strong> to <strong>{{ dest }}</strong></p>
+            <p class="flight-date">Flight Date: <span id="flight-date-text">{{ flight_date }}</span></p>
+            <p>Departure: {{ scheduled_time }}</p>
+        </div>
+        
+        <div class="prediction {% if is_delayed %}delayed{% else %}on-time{% endif %}">
+            {% if is_delayed %}
+                <h2>Delay Predicted</h2>
+                <p>Probability of delay: {{ delay_probability }}%</p>
+            {% else %}
+                <h2>On-Time Flight Predicted</h2>
+                <p>Your flight is predicted to depart on time or with minimal delay</p>
+                <p>Probability of on-time departure: {{ 100 - delay_probability }}%</p>
+                {% if delay_minutes > 0 %}
+                <p>Potential minor delay: {{ delay_minutes }} minutes</p>
+                {% endif %}
+            {% endif %}
+        </div>
+        
+        <div class="delay-definition">
+            <p><strong>Note:</strong> A flight is considered "delayed" when it departs 15 minutes or more after the scheduled time. Delays under 15 minutes are considered on-time according to industry standards.</p>
+        </div>
+        
+        {% if using_dummy_model %}
+        <div class="disclaimer">
+            <p>Note: This is a demonstration using a simplified prediction model. For accurate predictions, 
+            please ensure the actual trained model is available.</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Input Features Section -->
+    <div class="result-card features-section">
+        <h3>Input Features Used for Prediction</h3>
+        <table class="features-table">
+            <tr>
+                <th>Feature</th>
+                <th>Value</th>
+            </tr>
+            {% for feature, value in input_features.items() %}
+            <tr>
+                <td>{{ feature }}</td>
+                <td>{{ value }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    
+    <!-- Feature Importance Section (if available) -->
+    {% if feature_importances and not using_dummy_model %}
+    <div class="result-card features-section">
+        <h3>Feature Importance</h3>
+        <p>These features have the most influence on flight delay predictions:</p>
+        <table class="features-table">
+            <tr>
+                <th>Feature</th>
+                <th>Importance</th>
+                <th>Relative Weight</th>
+            </tr>
+            {% set first_importance = feature_importances.values()|list|first if feature_importances.values()|list else 1 %}
+            {% for feature, importance in feature_importances.items() %}
+            {% if loop.index <= 10 %}  <!-- Show top 10 features -->
+            <tr>
+                <td>{{ feature }}</td>
+                <td>{{ "%.4f"|format(importance) }}</td>
+                <td>
+                    <div class="importance-bar" style="width: {{ (importance / first_importance * 100)|int if first_importance > 0 else 0 }}%;"></div>
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </table>
+    </div>
+    {% endif %}
+    
+    <div class="action-buttons">
+        <a href="/" class="back-button">Check Another Flight</a>
+        <a href="/model-info" class="model-info-button">View Model Information</a>
+    </div>
+    
+    <script>
+        // Format the flight date for better display
+        const flightDate = '{{ flight_date }}';
+        if (flightDate) {
+            const date = new Date(flightDate);
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            const formattedDate = date.toLocaleDateString('en-US', options);
+            document.getElementById('flight-date-text').textContent = formattedDate;
+        }
+    </script>
+</body>
+</html>

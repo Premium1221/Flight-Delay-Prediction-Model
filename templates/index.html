@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flight Delay Predictor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .card {
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 0 -10px;
+        }
+        .col {
+            flex: 1;
+            padding: 0 10px;
+            min-width: 200px;
+        }
+        button {
+            background-color: #2196F3;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0b7dda;
+        }
+        .info-text {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .load-sample-btn {
+            background-color: #FF9800;
+            margin-bottom: 15px;
+        }
+        .date-info {
+            font-size: 14px;
+            color: #2196F3;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        .hidden-fields {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Flight Delay Predictor</h1>
+        <p>Enter your flight details to predict potential delays</p>
+    </div>
+    
+    <div class="card">
+        <button type="button" class="load-sample-btn" id="load-sample">Load Sample Flight</button>
+        
+        <form action="/predict" method="post" id="prediction-form">
+            <div class="row">
+                <div class="col">
+                    <div class="form-group">
+                        <label for="airline">Airline:</label>
+                        <select id="airline" name="airline" required>
+                            <option value="" selected disabled>Select Airline</option>
+                            <option value="AA">American Airlines (AA)</option>
+                            <option value="DL">Delta Air Lines (DL)</option>
+                            <option value="UA">United Airlines (UA)</option>
+                            <option value="WN">Southwest Airlines (WN)</option>
+                            <option value="B6">JetBlue Airways (B6)</option>
+                            <option value="AS">Alaska Airlines (AS)</option>
+                            <option value="NK">Spirit Airlines (NK)</option>
+                            <option value="F9">Frontier Airlines (F9)</option>
+                            <option value="G4">Allegiant Air (G4)</option>
+                            <option value="HA">Hawaiian Airlines (HA)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="origin">Origin Airport:</label>
+                        <input type="text" id="origin" name="origin" placeholder="Enter 3-letter code (e.g. DFW)" required maxlength="3">
+                        <div class="info-text">Enter the 3-letter airport code</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="dest">Destination Airport:</label>
+                        <input type="text" id="dest" name="dest" placeholder="Enter 3-letter code (e.g. LAX)" required maxlength="3">
+                        <div class="info-text">Enter the 3-letter airport code</div>
+                    </div>
+                </div>
+                
+                <div class="col">
+                    <div class="form-group">
+                        <label for="flight_date">Flight Date:</label>
+                        <input type="date" id="flight_date" name="flight_date" required>
+                        <div class="date-info" id="date-info"></div>
+                    </div>
+                    
+                    <!-- Hidden fields that will be automatically filled -->
+                    <div class="hidden-fields">
+                        <input type="hidden" id="day_of_week" name="day_of_week">
+                        <input type="hidden" id="month" name="month">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="scheduled_dep_time">Scheduled Departure Time:</label>
+                        <input type="time" id="scheduled_dep_time" name="scheduled_dep_time" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="distance">Flight Distance (miles):</label>
+                        <input type="number" id="distance" name="distance" min="1" required>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit">Predict Delay</button>
+        </form>
+    </div>
+    
+    <!-- JavaScript to handle form functionality -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Format inputs to uppercase
+            const airportInputs = document.querySelectorAll('#origin, #dest');
+            airportInputs.forEach(function(input) {
+                input.addEventListener('input', function() {
+                    this.value = this.value.toUpperCase();
+                });
+            });
+            
+            // Handle date selection
+            const flightDateInput = document.getElementById('flight_date');
+            const dayOfWeekInput = document.getElementById('day_of_week');
+            const monthInput = document.getElementById('month');
+            const dateInfoDiv = document.getElementById('date-info');
+            
+            flightDateInput.addEventListener('change', function() {
+                const selectedDate = new Date(this.value);
+                if (!isNaN(selectedDate)) {
+                    // Get day of week (0=Sunday, 1=Monday, ..., 6=Saturday)
+                    // We need to convert to 1=Monday, 2=Tuesday, ..., 7=Sunday for our model
+                    let dayOfWeek = selectedDate.getDay();
+                    dayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek; // Convert Sunday from 0 to 7
+                    
+                    // Get month (1-12)
+                    const month = selectedDate.getMonth() + 1;
+                    
+                    // Update hidden fields
+                    dayOfWeekInput.value = dayOfWeek;
+                    monthInput.value = month;
+                    
+                    // Show human-readable date info
+                    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                    
+                    dateInfoDiv.textContent = `${days[dayOfWeek - 1]}, ${months[month - 1]} ${selectedDate.getDate()}, ${selectedDate.getFullYear()}`;
+                }
+            });
+            
+            // Set default date to today
+            const today = new Date();
+            flightDateInput.value = today.toISOString().split('T')[0];
+            flightDateInput.dispatchEvent(new Event('change'));
+            
+            // Set default departure time to current time rounded to nearest hour
+            const hours = today.getHours().toString().padStart(2, '0');
+            const minutes = today.getMinutes() < 30 ? '00' : '30';
+            document.getElementById('scheduled_dep_time').value = `${hours}:${minutes}`;
+            
+            // Handle the "Load Sample Flight" button
+            const loadSampleBtn = document.getElementById('load-sample');
+            loadSampleBtn.addEventListener('click', function() {
+                // Sample flight data
+                const sampleFlights = [
+                    {
+                        airline: 'DL',
+                        origin: 'ATL',
+                        dest: 'LAX',
+                        scheduled_dep_time: '14:30',
+                        distance: '1950'
+                    },
+                    {
+                        airline: 'AA',
+                        origin: 'DFW',
+                        dest: 'ORD',
+                        scheduled_dep_time: '09:15',
+                        distance: '800'
+                    },
+                    {
+                        airline: 'WN',
+                        origin: 'MDW',
+                        dest: 'DEN',
+                        scheduled_dep_time: '18:45',
+                        distance: '925'
+                    },
+                    {
+                        airline: 'F9',
+                        origin: 'MSP',
+                        dest: 'SFO',
+                        scheduled_dep_time: '18:00',
+                        distance: '1589'
+                    }
+                ];
+                
+                // Randomly select a sample flight
+                const randomFlight = sampleFlights[Math.floor(Math.random() * sampleFlights.length)];
+                
+                // Fill the form with sample data
+                document.getElementById('airline').value = randomFlight.airline;
+                document.getElementById('origin').value = randomFlight.origin;
+                document.getElementById('dest').value = randomFlight.dest;
+                document.getElementById('scheduled_dep_time').value = randomFlight.scheduled_dep_time;
+                document.getElementById('distance').value = randomFlight.distance;
+                
+                // Generate a random date within the next 30 days
+                const futureDate = new Date();
+                futureDate.setDate(futureDate.getDate() + Math.floor(Math.random() * 30));
+                flightDateInput.value = futureDate.toISOString().split('T')[0];
+                flightDateInput.dispatchEvent(new Event('change'));
+            });
+            
+            // Form validation
+            const form = document.getElementById('prediction-form');
+            form.addEventListener('submit', function(e) {
+                const origin = document.getElementById('origin').value;
+                const dest = document.getElementById('dest').value;
+                const distance = document.getElementById('distance').value;
+                const flightDate = document.getElementById('flight_date').value;
+                
+                if (origin === dest) {
+                    alert('Origin and destination airports cannot be the same');
+                    e.preventDefault();
+                    return false;
+                }
+                
+                if (!/^[A-Z]{3}$/.test(origin)) {
+                    alert('Please enter a valid 3-letter origin airport code');
+                    e.preventDefault();
+                    return false;
+                }
+                
+                if (!/^[A-Z]{3}$/.test(dest)) {
+                    alert('Please enter a valid 3-letter destination airport code');
+                    e.preventDefault();
+                    return false;
+                }
+                
+                if (!distance || isNaN(distance) || distance <= 0) {
+                    alert('Please enter a valid distance');
+                    e.preventDefault();
+                    return false;
+                }
+                
+                if (!flightDate) {
+                    alert('Please select a flight date');
+                    e.preventDefault();
+                    return false;
+                }
+                
+                return true;
+            });
+        });
+    </script>
+</body>
+</html>

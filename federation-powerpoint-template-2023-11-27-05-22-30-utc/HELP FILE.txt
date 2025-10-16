@@ -1,0 +1,9 @@
+LINK FONT
+
+https://fonts.google.com/specimen/Oswald
+https://fonts.google.com/specimen/Prompt
+
+LINK IMAGE
+
+https://id.pinterest.com/
+https://unsplash.com/
