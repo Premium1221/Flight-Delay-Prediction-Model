@@ -1,4 +1,8 @@
-# ✈️ Data Dictionary for Flight Delay Prediction Dataset (2023)
+# Data Dictionary for Flight Delay Prediction Dataset (2023)
+
+Snapshot of the core BTS On-Time fields used across the notebooks and app.
+See `data/README.md` for sourcing instructions and `docs/README.md` for
+additional documentation pointers.
 
 | Feature                 | Type        | Description                                | Unit       | Range                          |
 |:------------------------|:------------|:-------------------------------------------|:-----------|:-------------------------------|

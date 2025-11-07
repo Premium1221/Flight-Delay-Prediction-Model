@@ -7,10 +7,25 @@ import numpy as np
 import pickle
 import joblib
 from datetime import datetime
+from pathlib import Path
 
 # Set a fixed random seed for consistent dummy predictions
 random.seed(42)
 np.random.seed(42)
+
+BASE_DIR = Path(__file__).resolve().parent
+MODEL_DIR = BASE_DIR / "models"
+MODEL_METADATA_DIR = MODEL_DIR / "metadata"
+MODEL_ENV_VAR = "FLIGHT_DELAY_MODEL_PATH"
+METADATA_ENV_VAR = "FLIGHT_DELAY_METADATA_PATH"
+MODEL_FILE_CANDIDATES = [
+    'Flight Delay Prediction Model.pkl',
+    'Flight_Delay_Prediction_Model.pkl',
+    'flight_delay_model.pkl',
+    'model.pkl',
+    'FD_model.pkl'
+]
+FEATURE_FILE_CANDIDATES = ['model_features.pkl', 'feature_names.pkl']
 
 # Try to import pandas and sklearn, but handle if not available
 try:
@@ -98,83 +113,128 @@ HARDCODED_MAPPINGS = {
     }
 }
 
+
+def _deduplicate_paths(paths):
+    """Yield unique Path objects while preserving order."""
+    seen = set()
+    for raw_path in paths:
+        if raw_path is None:
+            continue
+        candidate = raw_path if isinstance(raw_path, Path) else Path(raw_path)
+        resolved = candidate.resolve(strict=False)
+        key = str(resolved).lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        yield candidate
+
+
+def _model_search_paths():
+    """Return candidate paths where a serialized model might live."""
+    candidates = []
+    env_override = os.getenv(MODEL_ENV_VAR)
+    if env_override:
+        override_path = Path(env_override)
+        candidates.append(override_path)
+        if override_path.is_dir():
+            candidates.extend(override_path / name for name in MODEL_FILE_CANDIDATES)
+    search_dirs = [BASE_DIR, MODEL_DIR, BASE_DIR.parent]
+    for directory in search_dirs:
+        candidates.extend(Path(directory) / name for name in MODEL_FILE_CANDIDATES)
+    if MODEL_DIR.exists():
+        try:
+            newest_first = sorted(MODEL_DIR.glob("*.pkl"), key=lambda p: p.stat().st_mtime, reverse=True)
+            candidates.extend(newest_first)
+        except OSError:
+            pass
+    return _deduplicate_paths(candidates)
+
+
+def _metadata_search_paths(active_model_path=None):
+    """Return ordered directories to probe for metadata files."""
+    directories = []
+    env_override = os.getenv(METADATA_ENV_VAR)
+    if env_override:
+        directories.append(Path(env_override))
+    if active_model_path:
+        directories.append(Path(active_model_path).parent)
+    directories.extend([MODEL_METADATA_DIR, MODEL_DIR, BASE_DIR])
+    return _deduplicate_paths(directories)
+
 def load_model():
     """Load the trained model if available"""
     global model, using_dummy_model, model_features, feature_importances
-    
+
     try:
-        # Try different model file names that might exist in your project
-        model_paths = [
-            'Flight Delay Prediction Model.pkl',
-            'flight_delay_model.pkl',
-            'model.pkl',
-            'FD_model.pkl',
-            # Look in the parent directory as well
-            '../Flight Delay Prediction Model.pkl'
-        ]
-        
-        # Try to find and load any available model
         model_loaded = False
-        for path in model_paths:
-            if os.path.exists(path):
-                print(f"Found model at {path}")
+        active_model_path = None
+
+        for candidate in _model_search_paths():
+            if not candidate.exists():
+                continue
+            print(f"Attempting to load model from {candidate}")
+            try:
+                model = joblib.load(candidate)
+                model_loaded = True
+                active_model_path = candidate
+                using_dummy_model = False
+                print(f"Model loaded successfully using joblib from {candidate}")
+                break
+            except Exception as joblib_error:
+                print(f"joblib load failed for {candidate}: {joblib_error}")
                 try:
-                    # Try joblib first (handles more complex objects)
-                    model = joblib.load(path)
+                    with open(candidate, 'rb') as f:
+                        model = pickle.load(f)
                     model_loaded = True
+                    active_model_path = candidate
                     using_dummy_model = False
-                    print(f"Model loaded successfully using joblib from {path}")
+                    print(f"Model loaded successfully using pickle from {candidate}")
                     break
-                except Exception as e:
-                    try:
-                        # Fall back to pickle
-                        with open(path, 'rb') as f:
-                            model = pickle.load(f)
-                        model_loaded = True
-                        using_dummy_model = False
-                        print(f"Model loaded successfully using pickle from {path}")
-                        break
-                    except Exception as e:
-                        print(f"Error loading model from {path}: {str(e)}")
-        
+                except Exception as pickle_error:
+                    print(f"Error loading model from {candidate}: {pickle_error}")
+
         if model_loaded and not using_dummy_model:
             print("Model type:", type(model).__name__)
-            
-            # Try to get model features from multiple sources
-            try:
-                # First try to load from separate feature file
-                feature_names_file = 'model_features.pkl'
-                if os.path.exists(feature_names_file):
-                    model_features = joblib.load(feature_names_file)
-                    print(f"Loaded {len(model_features)} features from {feature_names_file}")
-                else:
-                    # If no separate file, use the predefined list
-                    model_features = EXACT_MODEL_FEATURES
-                    print(f"Using predefined list of {len(model_features)} features")
-            except Exception as e:
-                print(f"Error loading features: {e}")
+
+            feature_file_loaded = False
+            metadata_dirs = list(_metadata_search_paths(active_model_path))
+            feature_candidates = []
+            for directory in metadata_dirs:
+                for name in FEATURE_FILE_CANDIDATES:
+                    feature_candidates.append(Path(directory) / name)
+
+            for feature_path in _deduplicate_paths(feature_candidates):
+                if not feature_path.exists():
+                    continue
+                try:
+                    model_features = joblib.load(feature_path)
+                    feature_file_loaded = True
+                    print(f"Loaded {len(model_features)} features from {feature_path}")
+                    break
+                except Exception as feature_error:
+                    print(f"Error loading features from {feature_path}: {feature_error}")
+
+            if not feature_file_loaded:
                 model_features = EXACT_MODEL_FEATURES
-                print(f"Falling back to predefined list of {len(model_features)} features")
-            
-            # Try to get feature importances
+                print(f"Using predefined list of {len(model_features)} features")
+
             if hasattr(model, 'feature_importances_'):
                 try:
                     importances = model.feature_importances_
                     if len(model_features) > 0 and len(model_features) == len(importances):
                         feature_importances = {
-                            model_features[i]: importances[i] 
+                            model_features[i]: importances[i]
                             for i in range(len(model_features))
                         }
                         print(f"Extracted {len(feature_importances)} feature importances")
-                        # Sort features by importance
                         feature_importances = dict(sorted(
-                            feature_importances.items(), 
-                            key=lambda item: item[1], 
+                            feature_importances.items(),
+                            key=lambda item: item[1],
                             reverse=True
                         ))
                 except Exception as imp_error:
                     print(f"Error getting feature importances: {imp_error}")
-            
+
             print("Model loaded successfully")
         else:
             print("No model file found or error loading, using dummy model")

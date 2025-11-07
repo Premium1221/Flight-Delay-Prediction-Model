@@ -1,0 +1,66 @@
+.DS_Store
+Thumbs.db
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.pyd
+*.pyo
+*.so
+
+# Environments & packaging
+.env
+.env.*
+*.env
+.venv/
+venv/
+env/
+pip-wheel-metadata/
+*.egg-info/
+dist/
+build/
+
+# Notebook noise
+.ipynb_checkpoints/
+
+# Data artifacts (keep README markers)
+data/raw/**
+!data/raw/README.md
+data/interim/**
+!data/interim/.gitkeep
+data/processed/**
+!data/processed/.gitkeep
+data/external/**
+!data/external/.gitkeep
+
+# Model artifacts
+models/**/*.pkl
+models/**/*.joblib
+models/**/*.onnx
+models/**/*.json
+!models/README.md
+!models/metadata/README.md
+
+# Notebook exports and other heavy renders
+notebooks/exports/**
+!notebooks/exports/.gitkeep
+
+# Documentation binaries
+docs/exports/**
+!docs/exports/README.md
+docs/presentations/**
+!docs/presentations/README.md
+docs/presentations/assets/**
+!docs/presentations/assets/README.md
+docs/reports/**
+!docs/reports/README.md
+
+# Binary archives and installers
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+*.exe
+
